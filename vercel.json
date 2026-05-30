@@ -1,9 +1,6 @@
 {
   "outputDirectory": "public",
-  "routes": [
-    { "src": "/api/claude", "dest": "/api/claude.js" },
-    { "src": "/api/gemini", "dest": "/api/gemini.js" },
-    { "src": "/api/ping",   "dest": "/api/ping.js"   },
-    { "src": "/(.*)",       "dest": "/index.html"     }
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }
