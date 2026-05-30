@@ -1,5 +1,5 @@
 {
   "name": "igcse-tool",
   "version": "1.0.0",
-  "type": "module"
+  "type": "commonjs"
 }
