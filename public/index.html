@@ -272,42 +272,29 @@ Respond ONLY with valid JSON (no markdown fences, no preamble):
 }`;
 
   try {
-    const parts = [];
+    const content = [];
     images.forEach((img, i) => {
-      parts.push({ text: `Page ${i+1} of student's handwritten answer:` });
-      parts.push({ inline_data: { mime_type: img.mediaType, data: img.data } });
+      content.push({ type: "text", text: `Page ${i+1} of student's handwritten answer:` });
+      content.push({ type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } });
     });
-    parts.push({ text: promptText });
+    content.push({ type: "text", text: promptText });
 
-    const callGemini = async (attempt) => {
-      const r = await fetch(
-        "/api/gemini",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            model: "gemini-2.0-flash",
-            payload: {
-              contents: [{ parts }],
-              generationConfig: { temperature: 0.2, maxOutputTokens: 1000 },
-            },
-          }),
-        }
-      );
-      if (r.status === 429 && attempt < 3) {
-        await new Promise(resolve => setTimeout(resolve, 7000));
-        return callGemini(attempt + 1);
-      }
-      return r;
-    };
+    const r = await fetch("/api/claude", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-haiku-4-5-20251001",
+        max_tokens: 1000,
+        messages: [{ role: "user", content }],
+      }),
+    });
 
-    const res = await callGemini(1);
-    const data = await res.json();
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    const data = await r.json();
+    const text = data.content?.[0]?.text || "";
     if (text) {
-      return { result: JSON.parse(text.replace(/```json|```/g, "").trim()), model: "Gemini" };
+      return { result: JSON.parse(text.replace(/```json|```/g, "").trim()), model: "Claude" };
     }
-    console.error("Gemini returned no text:", data);
+    console.error("Claude returned no text:", data);
   } catch(e) {
     console.error("Gemini call failed:", e);
   }
