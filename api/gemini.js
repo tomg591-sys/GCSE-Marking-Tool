@@ -13,12 +13,12 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: "GEMINI_KEY not configured on server" });
   }
 
-  const model = (req.body && req.body.model) || "gemini-1.5-flash-latest";
+  const model = (req.body && req.body.model) || "gemini-2.0-flash";
   const payload = (req.body && req.body.payload) || req.body;
 
   try {
     const upstream = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${apiKey}`,
       {
         method: "POST",
         headers: { "Content-Type": "application/json" },
