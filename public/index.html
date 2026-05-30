@@ -45,10 +45,9 @@
 <script type="text/babel">
 
 // ── CONFIG ────────────────────────────────────────────────────────────────
-// API keys live in Vercel environment variables (server-side only).
-// The browser calls /api/claude and /api/gemini — never the APIs directly.
 const CONFIG = {
-  CLAUDE_DAILY_CAP: 10,  // switch to Gemini after this many Claude calls/day
+  GEMINI_KEY: "AIzaSyAOHLXwP9jmKkyKUODApvOgnDwTqn40Z4A",
+  CLAUDE_DAILY_CAP: 0,  // always use Gemini for now
 };
 
 // ── ANTHOLOGY TEXTS ────────────────────────────────────────────────────────
@@ -233,8 +232,6 @@ const USERS = {
 };
 
 // ── AI MARKING ENGINE ──────────────────────────────────────────────────────
-// All API calls go through /api/claude and /api/gemini (Vercel functions).
-// Keys never touch the browser.
 async function markAnswer({ qId, answer, paperLabel, anthologyId, images = [] }) {
   const q        = QUESTIONS.find(x => x.id === qId);
   const notes    = NOTES[anthologyId] || {};
@@ -275,38 +272,6 @@ Respond ONLY with valid JSON (no markdown fences, no preamble):
   "safeguardingNote": "<brief note if flagged, empty string otherwise>"
 }`;
 
-  const useGemini = DB.claudeToday() >= CONFIG.CLAUDE_DAILY_CAP;
-
-  // ── Via Claude proxy ───────────────────────────────────────────────────
-  if (!useGemini) {
-    try {
-      const content = [];
-      images.forEach((img, i) => {
-        content.push({ type: "text", text: `Page ${i+1} of student's handwritten answer:` });
-        content.push({ type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } });
-      });
-      content.push({ type: "text", text: promptText });
-
-      const res = await fetch("/api/claude", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          messages: [{ role: "user", content }],
-        }),
-      });
-      const data = await res.json();
-      if (data.content) {
-        DB.bumpClaude();
-        const text = data.content.map(b => b.text || "").join("");
-        return { result: JSON.parse(text.replace(/```json|```/g, "").trim()), model: "Claude" };
-      }
-      console.warn("Claude proxy returned no content, falling back:", data);
-    } catch(e) { console.warn("Claude proxy failed, trying Gemini:", e); }
-  }
-
-  // ── Via Gemini proxy ───────────────────────────────────────────────────
   try {
     const parts = [];
     images.forEach((img, i) => {
@@ -315,33 +280,36 @@ Respond ONLY with valid JSON (no markdown fences, no preamble):
     });
     parts.push({ text: promptText });
 
-    const res = await fetch("/api/gemini", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "gemini-2.0-flash",
-        payload: {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${CONFIG.GEMINI_KEY}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           contents: [{ parts }],
           generationConfig: { temperature: 0.2, maxOutputTokens: 1000 },
-        },
-      }),
-    });
+        }),
+      }
+    );
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
-    if (text) return { result: JSON.parse(text.replace(/```json|```/g, "").trim()), model: "Gemini" };
-    console.warn("Gemini proxy returned no content:", data);
-  } catch(e) { console.error("Gemini proxy failed:", e); }
+    if (text) {
+      return { result: JSON.parse(text.replace(/```json|```/g, "").trim()), model: "Gemini" };
+    }
+    console.error("Gemini returned no text:", data);
+  } catch(e) {
+    console.error("Gemini call failed:", e);
+  }
 
-  // ── Fallback error result ──────────────────────────────────────────────
   return {
     model: "Error",
     result: {
       mark: 0, outOf: q.marks,
       grade: "Error",
-      summary: "⚠️ Marking failed. Please check that ANTHROPIC_KEY and GEMINI_KEY are set in your Vercel environment variables, then redeploy.",
+      summary: "⚠️ Marking failed — please try again. If the problem persists, contact your teacher.",
       strengths: [],
       improvements: [],
-      examinerTip: "Contact your teacher if this error persists.",
+      examinerTip: "",
       safeguardingFlag: false, safeguardingNote: "",
     },
   };
