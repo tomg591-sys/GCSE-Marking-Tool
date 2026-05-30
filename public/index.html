@@ -1,0 +1,1096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Edexcel iGCSE English Language · Revision & Marking</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.development.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;600;700&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --accent: #1d4ed8;
+    --accent-light: #eff6ff;
+    --bg: #f8fafc;
+    --card: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 4px 12px rgba(0,0,0,0.05);
+    --font-display: 'Lora', Georgia, serif;
+    --font-body: 'Source Serif 4', Georgia, serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--font-body); background: var(--bg); color: var(--text); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  .fade-in { animation: fadeIn 0.3s ease forwards; }
+  button:hover { opacity: 0.88; }
+  a:hover { opacity: 0.8; }
+  textarea:focus, input:focus { border-color: var(--accent) !important; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  @media (max-width: 600px) {
+    .nav-label { display: none; }
+    .hide-mobile { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+
+// ── CONFIG ────────────────────────────────────────────────────────────────
+// API keys live in Vercel environment variables (server-side only).
+// The browser calls /api/claude and /api/gemini — never the APIs directly.
+const CONFIG = {
+  CLAUDE_DAILY_CAP: 10,  // switch to Gemini after this many Claude calls/day
+};
+
+// ── ANTHOLOGY TEXTS ────────────────────────────────────────────────────────
+const ANTHOLOGY_TEXTS = [
+  { id:"adichie",   title:"The Danger of a Single Story",           author:"Chimamanda Ngozi Adichie", genre:"Speech / TED talk" },
+  { id:"alagiah",   title:"A Passage to Africa",                    author:"George Alagiah",           genre:"Memoir / Autobiography" },
+  { id:"herbert",   title:"The Explorer's Daughter",                author:"Kari Herbert",             genre:"Travel writing" },
+  { id:"morris",    title:"Explorers or boys messing about?",       author:"Steven Morris",            genre:"Newspaper report" },
+  { id:"ralston",   title:"Between a Rock and a Hard Place",        author:"Aron Ralston",             genre:"Autobiography" },
+  { id:"zephaniah", title:"Young and dyslexic? You've got it going on", author:"Benjamin Zephaniah", genre:"Autobiographical polemic" },
+  { id:"levine",    title:"A Game of Polo with a Headless Goat",   author:"Emma Levine",              genre:"Travel writing" },
+  { id:"zeppa",     title:"Beyond the Sky and the Earth",          author:"Jamie Zeppa",              genre:"Travel memoir" },
+  { id:"macdonald", title:"H is for Hawk",                         author:"Helen Macdonald",          genre:"Memoir" },
+  { id:"yenmah",    title:"Chinese Cinderella",                     author:"Adeline Yen Mah",          genre:"Autobiography" },
+];
+
+// ── PAST PAPERS ────────────────────────────────────────────────────────────
+const PAST_PAPERS = [
+  { id:"nov2024", label:"November 2024", anthology:"herbert",
+    queUrl:"https://qualifications.pearson.com/content/dam/pdf/International-GCSE/English-Language-A/2016/Exam-materials/4ea1-01-que-20241106.pdf",
+    srcUrl:"https://qualifications.pearson.com/content/dam/pdf/International-GCSE/English-Language-A/2016/Exam-materials/4ea1-01-src-20241106.pdf" },
+  { id:"nov2023", label:"November 2023", anthology:"alagiah",
+    queUrl:"https://qualifications.pearson.com/content/dam/pdf/International-GCSE/English-Language-A/2016/Exam-materials/4ea1-01-que-20231108.pdf",
+    srcUrl:"https://qualifications.pearson.com/content/dam/pdf/International-GCSE/English-Language-A/2016/Exam-materials/4ea1-01-src-20231108.pdf" },
+  { id:"jun2023", label:"June 2023", anthology:"zephaniah",
+    queUrl:"https://qualifications.pearson.com/content/dam/pdf/International-GCSE/English-Language-A/2016/Exam-materials/4ea1-01-que-20230606.pdf",
+    srcUrl:"https://qualifications.pearson.com/content/dam/pdf/International-GCSE/English-Language-A/2016/Exam-materials/4ea1-01-src-20230606.pdf" },
+  { id:"nov2021", label:"November 2021", anthology:"ralston",
+    queUrl:"https://qualifications.pearson.com/content/dam/pdf/International%20GCSE/English%20Language%20A/2016/exam-materials/4EA1_01_que_20211102.pdf",
+    srcUrl:"https://qualifications.pearson.com/content/dam/pdf/International%20GCSE/English%20Language%20A/2016/exam-materials/4EA1_01_src_20211102.pdf" },
+  { id:"jan2020", label:"January 2020", anthology:"adichie",
+    queUrl:"https://qualifications.pearson.com/content/dam/pdf/International%20GCSE/English%20Language%20A/2016/exam-materials/4EA1_01R_que_20200221.pdf",
+    srcUrl:"https://qualifications.pearson.com/content/dam/pdf/International%20GCSE/English%20Language%20A/2016/exam-materials/4EA1_01R_src_20200221.pdf" },
+];
+
+// ── QUESTIONS ──────────────────────────────────────────────────────────────
+const QUESTIONS = [
+  { id:"q1", label:"Question 1", marks:2,  desc:"Select two words or phrases",         timing:"3 mins",  section:"Unseen text" },
+  { id:"q2", label:"Question 2", marks:4,  desc:"In your own words, describe…",        timing:"6 mins",  section:"Unseen text" },
+  { id:"q3", label:"Question 3", marks:5,  desc:"What do you learn about…",            timing:"6 mins",  section:"Unseen text" },
+  { id:"q4", label:"Question 4", marks:12, desc:"Analyse language and structure",      timing:"15 mins", section:"Anthology text" },
+  { id:"q5", label:"Question 5", marks:22, desc:"Compare writers' ideas & perspectives", timing:"40 mins", section:"Both texts" },
+];
+
+// ── REVISION NOTES ─────────────────────────────────────────────────────────
+const NOTES = {
+  adichie: {
+    background:"Nigerian novelist. Extract from a TED conference speech. Highly crafted with repeated anecdotes and the extended metaphor of the 'single story' to argue against stereotyping and cultural hegemony.",
+    structure:["Alternates between biographical anecdotes and didactic passages interpreting them","Anecdotes track chronologically: childhood Nigeria → university America → Mexico trip","Concludes with more overtly rhetorical style: 'stories matter'"],
+    language:["Oral voice: discourse markers 'Now,', 'So,' make register approachable","Motif of 'single story' representing ignorance/stereotyping — becomes plural 'stories' at end","Humorous, self-deprecating irony exposes mismatch between stereotype and reality","Rhetorical devices: tricolon, repetition, emotive language, simple declarative sentences ('I'm a storyteller')","Allusion to Paradise Regained in final line"],
+    q5:["Dangers of a singular/dominant perspective; cultural hegemony and unconscious bias","Power of childhood experiences in shaping beliefs about the world","Power of stories (literature and media) to create OR challenge stereotypes","Self-identity; journeys of empathy and greater understanding; West vs developing world"],
+  },
+  alagiah: {
+    background:"BBC journalist George Alagiah. Memoir of time in famine-ravaged Somalia. Part recollection, part moral reflection on the Western reporter's role and the ethics of reporting on tragedy.",
+    structure:["Short opening paragraph with cataphoric reference: 'one I will never forget'","Characterises journalists as 'ghoulish', comparing them to drug addicts","Series of vignettes of suffering with macabre, emotive language","Confessional discussion of 'mix of pity and revulsion' — the journalist's taboo","Climactic encounter with the man who smiles → epiphany about dehumanisation","Concludes with direct address to 'nameless friend'"],
+    language:["Asyndetic listing in semantic field of suffering: 'hungry, lean, scared and betrayed'","Syntax crafted for pathos: 'Habiba had died. No rage, no whimpering' — short bare sentences","Highly detailed sensory descriptions of physical suffering: 'decaying flesh', 'festering wound'","Confessional, reflective tone shifts to self-questioning then acceptance","Dynamic/passive contrast: journalist 'active', subject 'passive' — reflects dehumanisation argument"],
+    q5:["Role of journalists; the battle between professional detachment and human empathy","Pity vs empathy; the 'commodification' of tragic events by Western media","Epiphanic experiences — a single human encounter that transforms one's outlook","Dehumanisation of 'subjects'; the ethics of bearing witness"],
+  },
+  herbert: {
+    background:"Travel writer Kari Herbert, who spent childhood in NW Greenland with the Inughuit. Primarily travel writing, but also opinion/discussion about the ethics of the narwhal hunt. Defends the Inughuit's hunting as an 'absolute necessity'.",
+    structure:["Lyrical, descriptive opening — excitement of the hunt; writer as emotionally engaged observer","Style shifts dramatically to didactic, factual paragraphs contextualising the narwhal hunt","Returns to narrative; tension escalates as hunt approaches climax","Climax briefly delayed by another factual paragraph","Final paragraph: more opinionated; defends Inughuit hunting despite writer's conflicted feelings"],
+    language:["Extended metaphor of magic, fairytale and myth: 'spectral play of colour', 'glittering kingdom'","Beauty heavily stressed: phonetic intensives 'soft billows', compound adjective 'butter-gold'","Factual sections use jargon and Inughuit lexicon (mattak, tupilaks) to establish authority","Present participle verbs for tension and immediacy: 'pointing…focusing…spinning round'","Parenthetical dashes encapsulate her split-second internal conflict at the climactic moment"],
+    q5:["Relationship between humankind, animals and the physical landscape","Representation of non-Western cultures; Western reactions to the 'exotic'","Ethical uncertainty and moral relativism; defending unfamiliar ways of life","Subjectivity vs objectivity; travel writing conventions"],
+  },
+  morris: {
+    background:"Newspaper report by Steven Morris. Heavily biased: characterises the two 'explorers' as vain, incompetent, self-indulgent little boys. Uses conventions of objective reporting while being consistently partial in language, structure and selection.",
+    structure:["Opening immediately establishes: 'last expedition ended in farce'","Expert sources characterise men as inept; cost to taxpayer emphasised","Chronological account of crash and rescue from line 19","Digression to unflattering context (previous failed expeditions)","Concludes with wife's bathetc quote: 'bottoms kicked and sent home the long way'"],
+    language:["Loaded language: hyperbolic theatrical nouns — 'farce', 'tragedy', 'drama'","Dynamic verbs: helicopter 'plunged'; men 'scrambled', 'plucked' from 'icy waters'","Gender stereotyping and infantilisation: men as 'boys'; Bond-style image undercut bathetically","Contrast with competent decisive verbs for rescue forces: 'steams', 'dispatches', 'scramble'","Authorial bias through selection, sequencing and language choices throughout"],
+    q5:["Fact vs opinion; subjectivity vs objectivity","Power of the reporter to shape public perception of events","Adventure as heroic vs self-indulgent/irresponsible","Gender stereotypes and performances of masculinity; satire of such behaviours"],
+  },
+  ralston: {
+    background:"Aron Ralston's autobiography of his solo canyoneering accident, when his hand was crushed and trapped by a boulder. More intensely descriptive than typical autobiography, using present tense for immediacy.",
+    structure:["Three stages mirroring classic story arc: rising action → climax → falling action","First section: brisk, confident, didactic — establishes expertise","Tension enters at line 29: 'scraping quake' of the dislodged boulder","Narrative time compressed: 'in slow motion'; intensely subjective, fast-paced style","Final single-word sentence: 'Nothing' — conveys shocked helplessness"],
+    language:["Verisimilitude: present tense despite past events creates immediacy","Climbing jargon: 'chockstone', 'stemming', 'chimneying' — establishes calm rational expertise","Pacing manipulated through syntax: even clauses → jagged short clauses → long asyndetic sentence → 'Then silence'","Animalistic language during accident: 'grimace and growl', 'brute force', 'grunting'","Violent dynamic verbs and adjectives: 'smashes', 'crushing', 'flaring agony', 'searing-hot'"],
+    q5:["Exploring the natural world; the limitations of human power — hubris","Landscape as thrilling but brutal and dangerous for vulnerable humans","Subjective experience; 'time dilation' and the battle between reason and instinct","People's responses to painful, shocking or overwhelming situations"],
+  },
+  zephaniah: {
+    background:"Autobiographical polemic by poet/novelist Benjamin Zephaniah. Aims to inspire young dyslexic people by reframing dyslexia as a creative advantage, while critiquing systemic racial and educational prejudice.",
+    structure:["Opens with clear declaration: dyslexia is not a disability","Chronological anecdotes illustrate prejudice encountered; each followed by adult reflection","From line 36: broadens to polemical commentary on systemic prejudice","Towards end: reassures audience that even now he still struggles — they are not alone","Finishes with overtly rhetorical style and comic inversion: 'bloody non-dyslexics'"],
+    language:["First-person 'I' and 'we' create empathy and identification with target audience","Informal style; non-standard English ('a mate', 'rude boy') makes writer relatable","Direct speech of bigoted teachers quoted for vividness and impact","Rhetorical features: tricolon ('no compassion, no understanding and no humanity'), syntactical parallelism ('We are the architects. We are the designers.')","Literary allusion to establish credibility with secondary audience (parents, teachers)"],
+    q5:["Messages of inspiration and empowerment; reframing apparent disadvantage","Challenging stereotypes and systemic prejudice (both racial and educational)","Reflecting on painful childhood memories; tone of forgiveness and non-judgement","Journeys of self-discovery; resilience; growth and reconciliation"],
+  },
+  levine: {
+    background:"Travel writing and reportage by Emma Levine. A first-person, conversational, entertaining account of a donkey-cart race in Pakistan. Primarily aims to entertain; giving insight into an unfamiliar culture is a secondary purpose.",
+    structure:["Rising action: gradual build-up and comic anti-climax before race begins","Race itself: most fast-paced and exciting section, emphasising chaos and energy","Short simple sentence brings climax: 'The race was over'","Falling action: potential danger from betting disputes, then comic ironic revelation (no licence)"],
+    language:["Comic devices: direct speech, irony, bathos, hyperbole throughout","Exoticism and 'Otherness' of the experience emphasised — strangeness for the Western writer","Sensory description and present participle dynamic verbs create excitement","Clichés from action-adventure fiction frame event as thrilling: 'nerves of steel', 'quick reflexes'","Sentence lengths manipulate pacing; short declarative sentences slow pace for resolution"],
+    q5:["Entertainment as primary purpose; insight into Pakistani culture as secondary","Contrasts between Western and non-Western places and cultures","Outsider vs insider experience of the same event","Implicit question of whether characterisation is respectful or patronising"],
+  },
+  zeppa: {
+    background:"Travel memoir by Jamie Zeppa, a Canadian who went to teach English in Bhutan. First-person personal impressions interspersed with history and geography. Grows from initial disappointment to open admiration for Bhutan.",
+    structure:["Opening: lyrical description conveys awe at the vast Bhutanese landscape","Third paragraph: first impressions of Thimphu — tone of disappointment at 'cultural infiltration'","From line 54: focus shifts to the Bhutanese people — tone becomes much warmer","From line 70: more didactic and informative; truncated history of Bhutan","Final line: explicit admiration — 'I am full of admiration for this small country'"],
+    language:["Imagery of vastness and mysteriousness: present participles, tricolonic repetition 'mountains, more mountains and more mountains again'","Negative characterisation of Thimphu initially: 'flavourless', 'hideously coloured', 'faded'","Positive characterisation of Bhutanese people: 'beautiful aristocratic faces', 'dignity, unselfconsciousness, good humor, grace'","Romanticised imagery: 'golden-tipped fortress', 'Rainbow District of Desires'","Bhutanese terminology (dzong, kira, gho) adds authenticity; bias visible in history section"],
+    q5:["Contrast between West and East in culture, architecture, values","Changing perceptions of a place — from underwhelmed to admiring","Encountering the sublime in the natural world","Globalisation and cultural homogeneity vs preservation of authentic cultures"],
+  },
+  macdonald: {
+    background:"Helen Macdonald's memoir of training a goshawk after the death of her father. Grief and emotional recovery are the underlying context. Follows memoir conventions with highly personal reflective insight; matches fiction in its exploration of character and theme.",
+    structure:["Calm, measured opening builds anticipation for the goshawk's reveal","Long third paragraph: intense lyrical style on first seeing the hawk; sensory overload","Short simple sentence at line 32 marks fall in tension; more measured description","Bathetic shift at line 46: 'the wrong bird' — fragments and single-word paragraph 'Oh'","Final paragraph: writer describes herself as she imagines she appears — comic but summative"],
+    language:["Intense visual and sensory imagery throughout: consistent intensity reflects emotional stakes","Onomatopoeia and alliteration: 'whirring, chaotic clatter of wings'","Synesthetic imagery and pathetic fallacy: 'syrupy, slow' air; 'flood' of sunlight 'drenches'","Sentence-structure variety: fragments mimic held breath; long multi-claused sentences convey sensory torrent","Hyperspecific detail and ambiguous 'Two enormous eyes' reinforce emotional bond with hawk"],
+    q5:["Humans' relationship with the natural world; emotional bonds between humans and animals","Grief and the struggle to express overwhelming emotions","Subjective personal experience vs objective description","How humans perceive the world differently from animals"],
+  },
+  yenmah: {
+    background:"Autobiography by Chinese-American author and doctor Adeline Yen Mah. A key moment with her domineering father in 1950s Hong Kong. Past tense but the writer constructs a teenage persona with low self-esteem and emotional extremes — avoids explicit retrospective reflection.",
+    structure:["Opening: dismal Cinderella-like situation at boarding school; no hope for the future","Chauffeur arrival escalates anxiety in narrative voice","Meeting father: fear reaches a climax, then unexpectedly dissipates","Conversation reveals their relationship: stern patriarch, respectful obedient daughter","Ending: Cinderella reversal — allowed to go to England; internal joy vs formal spoken reply"],
+    language:["Conventions of narrative fiction: Cinderella 'reversal of fortune' structure throughout","Symbolism: 'warm wind' and 'possible typhoon' foreshadow coming conflict","Negative/depressive teenage persona: 'throbbed at the back of my mind like a persistent toothache'","'The Holy of Holies': religious allusion suggests father's almighty, fearful power","Direct speech characterises father's expectation of compliance: 'you will go to England…you will go to medical school'"],
+    q5:["Family relationships; internal conflict between duty and desire for self-determination","Transformative moments when growing up; changes in circumstances","Emotional worlds of young people vs how adults perceive them","1950s upper-middle-class Chinese Hong Kong society vs modern Western values"],
+  },
+};
+
+// ── MARK SCHEMES ───────────────────────────────────────────────────────────
+function getMarkScheme(qId) {
+  const s = {
+    q1:`Q1 (2 marks): 1 mark per relevant word/phrase quoted directly from specified lines. No explanation needed. Max 2 marks. Common errors: paraphrasing instead of quoting; quoting from wrong lines.`,
+    q2:`Q2 (4 marks): 1 mark per distinct, clearly explained point about thoughts/feelings IN OWN WORDS. No marks for bare quotation. Reward inference — reading between the lines. 4 separate, precisely explained points needed.`,
+    q3:`Q3 (5 marks): 1 mark per Point + brief Quote + Explanatory inference (PQE × 5). Reward range of comprehension. All evidence from specified line range only.`,
+    q4:`Q4 (12 marks):
+Band 4 (10–12): Perceptive detailed analysis. Sophisticated terminology. Convincing interpretation. Multiple well-chosen quotes analysed at word level. Structural AND language points across whole text.
+Band 3 (7–9): Clear explanation of effects. Relevant terminology. Supported with quotes. Some analysis of individual words.
+Band 2 (4–6): Some awareness. Quotes included but analysis surface-level. Limited terminology.
+Band 1 (1–3): Simple comments. Little analysis. Minimal terminology.
+Must cover beginning, middle AND end of text. Must include structural point.`,
+    q5:`Q5 (22 marks):
+Band 4 (18–22): Perceptive detailed comparison of BOTH writers' perspectives/attitudes throughout. Sophisticated analysis of language/structure. Wide range of comparative points.
+Band 3 (13–17): Clear explained comparisons. Both texts engaged with throughout. Relevant techniques discussed. Consistently comparative structure.
+Band 2 (7–12): Some comparison. Both texts mentioned but may be imbalanced. Language features noted.
+Band 1 (1–6): Simple observations. May describe rather than compare. May focus on one text only.
+Focus must be on what WRITERS THINK AND FEEL — not just what happens. Compare both texts throughout every paragraph.`,
+  };
+  return s[qId] || "";
+}
+
+// ── SAFEGUARDING ───────────────────────────────────────────────────────────
+const SAFEGUARDING_KEYWORDS = ["self-harm","self harm","hurt myself","kill myself","suicide","being abused","abuse","rape","sexual","drugs","alcohol","weapon","bomb","extremist","grooming","exploit","running away","nobody cares","want to die","no point living"];
+const SAFEGUARDING_NOTICE = `This tool is monitored in accordance with school safeguarding policy (KCSIE 2024). Content raising welfare concerns is automatically flagged to your Designated Safeguarding Lead. If you need to speak to someone urgently, contact a trusted adult or call Childline free on 0800 1111.`;
+function checkSafeguarding(text) {
+  const lower = text.toLowerCase();
+  return SAFEGUARDING_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+// ── STORAGE (localStorage — replace with Supabase for production) ──────────
+const DB = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+  addSubmission: (s) => {
+    const all = DB.get("dc_submissions") || [];
+    const entry = { ...s, id: Date.now(), ts: new Date().toISOString() };
+    all.unshift(entry);
+    DB.set("dc_submissions", all);
+    return entry;
+  },
+  getSubmissions: (userId) => {
+    const all = DB.get("dc_submissions") || [];
+    return userId ? all.filter(s => s.userId === userId) : all;
+  },
+  addFlag: (f) => {
+    const all = DB.get("dc_flags") || [];
+    all.unshift({ ...f, id: Date.now(), ts: new Date().toISOString(), resolved: false });
+    DB.set("dc_flags", all);
+  },
+  getFlags: () => DB.get("dc_flags") || [],
+  resolveFlag: (id) => {
+    const all = DB.get("dc_flags") || [];
+    DB.set("dc_flags", all.map(f => f.id === id ? { ...f, resolved: true } : f));
+  },
+  claudeToday: () => {
+    const d = DB.get("dc_claude");
+    const today = new Date().toDateString();
+    if (!d || d.date !== today) return 0;
+    return d.count;
+  },
+  bumpClaude: () => {
+    const today = new Date().toDateString();
+    const count = DB.claudeToday() + 1;
+    DB.set("dc_claude", { date: today, count });
+    return count;
+  },
+};
+
+// ── MOCK USERS (replace with Supabase Auth in production) ─────────────────
+const USERS = {
+  "student@test.com": { password:"student123", role:"student", name:"Alex Smith",   id:"s1" },
+  "teacher@test.com": { password:"teacher123", role:"teacher", name:"Ms Johnson",   id:"t1" },
+};
+
+// ── AI MARKING ENGINE ──────────────────────────────────────────────────────
+// All API calls go through /api/claude and /api/gemini (Vercel functions).
+// Keys never touch the browser.
+async function markAnswer({ qId, answer, paperLabel, anthologyId, images = [] }) {
+  const q        = QUESTIONS.find(x => x.id === qId);
+  const notes    = NOTES[anthologyId] || {};
+  const anthTitle = ANTHOLOGY_TEXTS.find(t => t.id === anthologyId)?.title || "Not specified";
+  const hasImages = images.length > 0;
+
+  const promptText = `You are an expert Edexcel iGCSE English Language examiner (Spec A, Paper 1: 4EA1/01).
+Mark this student answer accurately and encouragingly. The student is aged 13–16.
+
+QUESTION: ${q.label} (${q.marks} marks) — ${q.desc}
+PAPER: ${paperLabel || "General practice"}
+ANTHOLOGY TEXT: ${anthTitle}
+
+YOUR REFERENCE NOTES ON THIS TEXT:
+Background: ${notes.background || ""}
+Key structure points: ${(notes.structure || []).join("; ")}
+Key language points: ${(notes.language || []).join("; ")}
+
+MARK SCHEME:
+${getMarkScheme(qId)}
+
+STUDENT ANSWER:
+${hasImages
+  ? `The student has submitted a handwritten answer as ${images.length} image(s) (provided above, in page order). Please read all pages carefully before marking.${answer.trim() ? `\n\nAdditional typed notes: ${answer.trim()}` : ""}`
+  : `"""\n${answer}\n"""`
+}
+
+Respond ONLY with valid JSON (no markdown fences, no preamble):
+{
+  "mark": <integer 0–${q.marks}>,
+  "outOf": ${q.marks},
+  "grade": "<Excellent|Good|Developing|Beginning>",
+  "summary": "<1-2 sentence overview of answer quality, warm and specific>",
+  "strengths": ["<specific strength with example from answer>", "<second strength>"],
+  "improvements": ["<specific actionable improvement>", "<second improvement>"],
+  "examinerTip": "<one concise exam technique tip directly relevant to this answer>",
+  "safeguardingFlag": <true if content contains anything concerning for a 13-16yr old, false otherwise>,
+  "safeguardingNote": "<brief note if flagged, empty string otherwise>"
+}`;
+
+  const useGemini = DB.claudeToday() >= CONFIG.CLAUDE_DAILY_CAP;
+
+  // ── Via Claude proxy ───────────────────────────────────────────────────
+  if (!useGemini) {
+    try {
+      const content = [];
+      images.forEach((img, i) => {
+        content.push({ type: "text", text: `Page ${i+1} of student's handwritten answer:` });
+        content.push({ type: "image", source: { type: "base64", media_type: img.mediaType, data: img.data } });
+      });
+      content.push({ type: "text", text: promptText });
+
+      const res = await fetch("/api/claude", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 1000,
+          messages: [{ role: "user", content }],
+        }),
+      });
+      const data = await res.json();
+      if (data.content) {
+        DB.bumpClaude();
+        const text = data.content.map(b => b.text || "").join("");
+        return { result: JSON.parse(text.replace(/```json|```/g, "").trim()), model: "Claude" };
+      }
+      console.warn("Claude proxy returned no content, falling back:", data);
+    } catch(e) { console.warn("Claude proxy failed, trying Gemini:", e); }
+  }
+
+  // ── Via Gemini proxy ───────────────────────────────────────────────────
+  try {
+    const parts = [];
+    images.forEach((img, i) => {
+      parts.push({ text: `Page ${i+1} of student's handwritten answer:` });
+      parts.push({ inline_data: { mime_type: img.mediaType, data: img.data } });
+    });
+    parts.push({ text: promptText });
+
+    const res = await fetch("/api/gemini", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gemini-2.0-flash",
+        payload: {
+          contents: [{ parts }],
+          generationConfig: { temperature: 0.2, maxOutputTokens: 1000 },
+        },
+      }),
+    });
+    const data = await res.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    if (text) return { result: JSON.parse(text.replace(/```json|```/g, "").trim()), model: "Gemini" };
+    console.warn("Gemini proxy returned no content:", data);
+  } catch(e) { console.error("Gemini proxy failed:", e); }
+
+  // ── Fallback error result ──────────────────────────────────────────────
+  return {
+    model: "Error",
+    result: {
+      mark: 0, outOf: q.marks,
+      grade: "Error",
+      summary: "⚠️ Marking failed. Please check that ANTHROPIC_KEY and GEMINI_KEY are set in your Vercel environment variables, then redeploy.",
+      strengths: [],
+      improvements: [],
+      examinerTip: "Contact your teacher if this error persists.",
+      safeguardingFlag: false, safeguardingNote: "",
+    },
+  };
+}
+
+// ══════════════════════════════════════════════════════════════════════════
+// REACT COMPONENTS
+// ══════════════════════════════════════════════════════════════════════════
+const { useState, useEffect, useRef } = React;
+
+// ── Helpers ────────────────────────────────────────────────────────────────
+const markColour = (m, o) => {
+  if (o == null) return "#64748b";
+  const p = m / o;
+  return p >= 0.75 ? "#16a34a" : p >= 0.5 ? "#d97706" : "#dc2626";
+};
+
+const S = {
+  label:  { display:"block", fontSize:"0.875rem", fontWeight:600, color:"var(--text)", marginBottom:"0.5rem" },
+  input:  { width:"100%", padding:"0.7rem 1rem", border:"2px solid var(--border)", borderRadius:10, fontSize:"0.9rem", color:"var(--text)", background:"var(--bg)", boxSizing:"border-box", fontFamily:"var(--font-body)", outline:"none" },
+  primaryBtn: { background:"var(--accent)", color:"#fff", border:"none", borderRadius:10, padding:"0.75rem 1.5rem", fontSize:"0.9rem", fontWeight:700, cursor:"pointer", fontFamily:"var(--font-body)", width:"100%" },
+  secondaryBtn: { background:"var(--bg)", color:"var(--text)", border:"1px solid var(--border)", borderRadius:8, padding:"0.55rem 1.1rem", fontSize:"0.85rem", fontWeight:600, cursor:"pointer", fontFamily:"var(--font-body)" },
+  card:   { background:"var(--card)", borderRadius:16, padding:"1.75rem", boxShadow:"var(--shadow)" },
+  pageH:  { fontFamily:"var(--font-display)", fontSize:"1.55rem", color:"var(--text)", marginBottom:"0.4rem", letterSpacing:"-0.02em" },
+  tab:    { background:"var(--bg)", border:"1px solid var(--border)", borderRadius:8, padding:"0.4rem 0.9rem", fontSize:"0.82rem", cursor:"pointer", color:"var(--text-secondary)", fontFamily:"var(--font-body)" },
+  tabOn:  { background:"var(--accent-light)", borderColor:"var(--accent)", color:"var(--accent)", fontWeight:700 },
+  qCard:  { background:"var(--card)", borderRadius:12, padding:"1rem 1.25rem", border:"1px solid var(--border)", cursor:"pointer", textAlign:"left", width:"100%", fontFamily:"var(--font-body)", marginBottom:"0.6rem", boxShadow:"var(--shadow)" },
+};
+
+// ── LOGIN ──────────────────────────────────────────────────────────────────
+function LoginPage({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [err, setErr] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const submit = async e => {
+    e.preventDefault();
+    setLoading(true); setErr("");
+    await new Promise(r => setTimeout(r, 350));
+    const u = USERS[email];
+    if (u && u.password === pw) onLogin({ email, ...u });
+    else setErr("Incorrect email or password.");
+    setLoading(false);
+  };
+
+  return (
+    <div style={{ minHeight:"100vh", background:"var(--bg)", display:"flex", alignItems:"center", justifyContent:"center", padding:"2rem" }}>
+      <div style={{ width:"100%", maxWidth:420 }} className="fade-in">
+        <div style={{ textAlign:"center", marginBottom:"2.5rem" }}>
+          <div style={{ fontSize:"2.8rem", marginBottom:"0.5rem" }}>📚</div>
+          <h1 style={{ fontFamily:"var(--font-display)", fontSize:"1.9rem", color:"var(--accent)", letterSpacing:"-0.02em" }}>English Language</h1>
+          <p style={{ color:"var(--text-muted)", marginTop:"0.25rem" }}>Edexcel iGCSE Revision & Marking Tool</p>
+          <p style={{ color:"var(--text-muted)", fontSize:"0.78rem", marginTop:"0.2rem", fontStyle:"italic" }}>Dulwich College</p>
+        </div>
+        <form onSubmit={submit} style={{ ...S.card }}>
+          <div style={{ marginBottom:"1.1rem" }}>
+            <label style={S.label}>Email address</label>
+            <input value={email} onChange={e=>setEmail(e.target.value)} type="email" placeholder="name@school.ac.uk" required style={S.input} />
+          </div>
+          <div style={{ marginBottom:"1.4rem" }}>
+            <label style={S.label}>Password</label>
+            <input value={pw} onChange={e=>setPw(e.target.value)} type="password" placeholder="••••••••" required style={S.input} />
+          </div>
+          {err && <div style={{ background:"#fee2e2", color:"#991b1b", padding:"0.7rem 1rem", borderRadius:8, marginBottom:"1rem", fontSize:"0.875rem" }}>{err}</div>}
+          <button type="submit" disabled={loading} style={S.primaryBtn}>{loading ? "Signing in…" : "Sign in →"}</button>
+        </form>
+        <p style={{ textAlign:"center", marginTop:"1.25rem", fontSize:"0.8rem", color:"var(--text-muted)" }}>
+          Don't have an account? Ask your teacher to create one.
+        </p>
+        <div style={{ textAlign:"center", marginTop:"0.75rem", fontSize:"0.73rem", color:"var(--text-muted)", background:"var(--card)", border:"1px dashed var(--border)", borderRadius:8, padding:"0.6rem 1rem" }}>
+          <strong>Demo credentials:</strong><br/>
+          Student: student@test.com / student123 &nbsp;|&nbsp; Teacher: teacher@test.com / teacher123
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── STUDENT HOME ───────────────────────────────────────────────────────────
+function StudentHome({ user, nav }) {
+  const subs = DB.getSubmissions(user.id);
+  const total = subs.reduce((a,s) => a + (s.result?.mark||0), 0);
+  const outOf = subs.reduce((a,s) => a + (s.result?.outOf||0), 0);
+  const avg = outOf > 0 ? Math.round(total/outOf*100) : null;
+
+  return (
+    <div style={{ maxWidth:800, margin:"0 auto", padding:"2rem 1rem" }} className="fade-in">
+      <div style={{ background:"linear-gradient(135deg, #1d4ed8 0%, #2563eb 100%)", borderRadius:20, padding:"2rem 2rem 1.75rem", color:"#fff", marginBottom:"1.75rem", boxShadow:"0 4px 24px rgba(37,99,235,0.25)" }}>
+        <h2 style={{ margin:0, fontFamily:"var(--font-display)", fontSize:"1.6rem" }}>Welcome back, {user.name.split(" ")[0]} 👋</h2>
+        <p style={{ margin:"0.5rem 0 1.5rem", opacity:0.85 }}>Ready to revise? Choose what you'd like to do below.</p>
+        <div style={{ display:"flex", gap:"1rem", flexWrap:"wrap" }}>
+          {[["Submissions", subs.length], ["Average score", avg!=null?`${avg}%`:"—"], ["Q4 attempts", subs.filter(s=>s.qId==="q4").length], ["Q5 attempts", subs.filter(s=>s.qId==="q5").length]].map(([l,v])=>(
+            <div key={l} style={{ background:"rgba(255,255,255,0.2)", borderRadius:10, padding:"0.5rem 1rem" }}>
+              <div style={{ fontFamily:"var(--font-display)", fontSize:"1.4rem", color:"#fff", lineHeight:1 }}>{v}</div>
+              <div style={{ fontSize:"0.75rem", color:"rgba(255,255,255,0.82)", marginTop:2 }}>{l}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(180px,1fr))", gap:"0.85rem", marginBottom:"1.75rem" }}>
+        {[
+          { icon:"📖", title:"Revision Notes",    desc:"All 10 anthology texts",       page:"revision" },
+          { icon:"✏️", title:"Practice & Marking", desc:"Submit answers for AI feedback", page:"practice" },
+          { icon:"📊", title:"My Progress",        desc:"Review past submissions",       page:"progress" },
+          { icon:"📄", title:"Past Papers",        desc:"Official Edexcel papers",       page:"papers" },
+        ].map(({icon,title,desc,page}) => (
+          <button key={page} onClick={() => nav(page)}
+            style={{ background:"var(--card)", borderRadius:14, padding:"1.25rem", border:"1px solid var(--border)", cursor:"pointer", textAlign:"left", boxShadow:"var(--shadow)", transition:"border-color 0.15s" }}
+            onMouseEnter={e=>e.currentTarget.style.borderColor="var(--accent)"}
+            onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
+            <div style={{ fontSize:"1.75rem", marginBottom:"0.5rem" }}>{icon}</div>
+            <div style={{ fontWeight:700, fontSize:"0.95rem", fontFamily:"var(--font-display)", color:"var(--text)" }}>{title}</div>
+            <div style={{ fontSize:"0.8rem", color:"var(--text-muted)", marginTop:3 }}>{desc}</div>
+          </button>
+        ))}
+      </div>
+
+      {subs.length > 0 && (
+        <div style={S.card}>
+          <h3 style={{ margin:"0 0 1rem", fontFamily:"var(--font-display)", fontSize:"1.1rem" }}>Recent submissions</h3>
+          {subs.slice(0,3).map(s => <SubRow key={s.id} sub={s} />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── REVISION PAGE ──────────────────────────────────────────────────────────
+function RevisionPage() {
+  const [sel, setSel] = useState(null);
+  const [tab, setTab] = useState("structure");
+  const notes = sel ? NOTES[sel] : null;
+  const text  = ANTHOLOGY_TEXTS.find(t => t.id === sel);
+
+  return (
+    <div style={{ maxWidth:900, margin:"0 auto", padding:"2rem 1rem" }} className="fade-in">
+      <h2 style={S.pageH}>Revision Notes</h2>
+      <p style={{ color:"var(--text-muted)", marginBottom:"1.5rem" }}>Select a text to study key ideas, language features and comparison themes.</p>
+
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(175px,1fr))", gap:"0.65rem", marginBottom:"1.75rem" }}>
+        {ANTHOLOGY_TEXTS.map(t => (
+          <button key={t.id} onClick={() => { setSel(t.id); setTab("structure"); }}
+            style={{ background:"var(--card)", borderRadius:12, padding:"0.9rem", border:`2px solid ${sel===t.id?"var(--accent)":"var(--border)"}`, cursor:"pointer", textAlign:"left", background: sel===t.id?"var(--accent-light)":"var(--card)", transition:"all 0.15s" }}>
+            <div style={{ fontWeight:600, fontSize:"0.82rem", color:"var(--text)", marginBottom:3, lineHeight:1.35 }}>{t.title}</div>
+            <div style={{ fontSize:"0.73rem", color:"var(--text-muted)" }}>{t.author}</div>
+            <div style={{ fontSize:"0.7rem", color:"var(--accent)", marginTop:3, fontStyle:"italic" }}>{t.genre}</div>
+          </button>
+        ))}
+      </div>
+
+      {notes && text && (
+        <div style={{ ...S.card, animation:"fadeIn 0.25s ease" }}>
+          <h3 style={{ margin:"0 0 0.2rem", fontFamily:"var(--font-display)", fontSize:"1.3rem", color:"var(--accent)" }}>{text.title}</h3>
+          <p style={{ margin:"0 0 1rem", color:"var(--text-muted)", fontSize:"0.875rem" }}>{text.author} · {text.genre}</p>
+
+          <div style={{ background:"var(--bg)", borderRadius:10, padding:"1rem", marginBottom:"1.25rem", fontSize:"0.88rem", color:"var(--text-secondary)", lineHeight:1.65 }}>
+            <strong style={{ color:"var(--text)" }}>Background: </strong>{notes.background}
+          </div>
+
+          <div style={{ display:"flex", gap:"0.5rem", marginBottom:"1.25rem", flexWrap:"wrap" }}>
+            {[["structure","📐 Structure"],["language","🔍 Language"],["q5","💡 Q5 Ideas"]].map(([id,label])=>(
+              <button key={id} onClick={()=>setTab(id)} style={{ ...S.tab, ...(tab===id?S.tabOn:{}) }}>{label}</button>
+            ))}
+          </div>
+
+          {tab === "structure" && (
+            <ul style={{ margin:0, paddingLeft:"1.3rem" }}>
+              {notes.structure.map((item,i) => <li key={i} style={{ fontSize:"0.875rem", color:"var(--text-secondary)", marginBottom:"0.6rem", lineHeight:1.55 }}>{item}</li>)}
+            </ul>
+          )}
+          {tab === "language" && (
+            <ul style={{ margin:0, paddingLeft:"1.3rem" }}>
+              {notes.language.map((item,i) => <li key={i} style={{ fontSize:"0.875rem", color:"var(--text-secondary)", marginBottom:"0.6rem", lineHeight:1.55 }}>{item}</li>)}
+            </ul>
+          )}
+          {tab === "q5" && (
+            <ul style={{ margin:0, paddingLeft:"1.3rem" }}>
+              {notes.q5.map((item,i) => <li key={i} style={{ fontSize:"0.875rem", color:"var(--text-secondary)", marginBottom:"0.6rem", lineHeight:1.55 }}>{item}</li>)}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── PRACTICE PAGE ──────────────────────────────────────────────────────────
+function PracticePage({ user }) {
+  const [step, setStep] = useState("q");   // q → paper → write → marking → result
+  const [qId, setQId] = useState(null);
+  const [paperId, setPaperId] = useState(null);
+  const [answer, setAnswer] = useState("");
+  // pages: array of { dataUrl, data (base64), mediaType, label }
+  const [pages, setPages] = useState([]);
+  const [result, setResult] = useState(null);
+  const fileRef = useRef();
+
+  const q     = QUESTIONS.find(x => x.id === qId);
+  const paper = PAST_PAPERS.find(x => x.id === paperId);
+
+  const addPages = e => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+    files.forEach(f => {
+      const r = new FileReader();
+      r.onload = ev => {
+        const dataUrl = ev.target.result;
+        const data = dataUrl.split(",")[1];
+        const mediaType = f.type || "image/jpeg";
+        setPages(prev => [...prev, { dataUrl, data, mediaType }]);
+      };
+      r.readAsDataURL(f);
+    });
+    // reset input so same file can be re-added if needed
+    e.target.value = "";
+  };
+
+  const removePage = idx => setPages(prev => prev.filter((_, i) => i !== idx));
+  const movePage   = (idx, dir) => {
+    setPages(prev => {
+      const arr = [...prev];
+      const swap = idx + dir;
+      if (swap < 0 || swap >= arr.length) return arr;
+      [arr[idx], arr[swap]] = [arr[swap], arr[idx]];
+      return arr;
+    });
+  };
+
+  const submit = async () => {
+    const hasText   = answer.trim().length > 0;
+    const hasImages = pages.length > 0;
+    if (!hasText && !hasImages) return;
+
+    const textForSafeguard = answer.trim();
+    if (textForSafeguard && checkSafeguarding(textForSafeguard))
+      DB.addFlag({ userId:user.id, userName:user.name, qId, paperId, content:textForSafeguard, reason:"Keyword match" });
+
+    setStep("marking");
+    const anthologyId = paper?.anthology || "adichie";
+    const paperLabel  = paper?.label || "General practice";
+
+    const { result: res, model } = await markAnswer({
+      qId, answer: answer.trim(), paperLabel, anthologyId,
+      images: pages.map(p => ({ data: p.data, mediaType: p.mediaType })),
+    });
+
+    if (res.safeguardingFlag)
+      DB.addFlag({ userId:user.id, userName:user.name, qId, paperId, content:answer.trim()||"[image]", reason: res.safeguardingNote || "AI flag" });
+
+    DB.addSubmission({ userId:user.id, userName:user.name, qId, paperId,
+      answer: answer.trim() || `[${pages.length}-page handwritten answer]`, result:res, model });
+    setResult({ ...res, model });
+    setStep("result");
+  };
+
+  const reset = () => { setAnswer(""); setPages([]); setResult(null); };
+
+  // ── Step: choose question
+  if (step === "q") return (
+    <div style={{ maxWidth:700, margin:"0 auto", padding:"2rem 1rem" }} className="fade-in">
+      <h2 style={S.pageH}>Practice & Marking</h2>
+      <p style={{ color:"var(--text-muted)", marginBottom:"1.5rem" }}>Which question would you like to practise?</p>
+      {QUESTIONS.map(q => (
+        <button key={q.id} onClick={()=>{ setQId(q.id); setStep("paper"); }} style={S.qCard}
+          onMouseEnter={e=>e.currentTarget.style.borderColor="var(--accent)"}
+          onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"0.5rem" }}>
+            <div>
+              <span style={{ fontWeight:700, fontSize:"1rem", color:"var(--accent)" }}>{q.label}</span>
+              <span style={{ marginLeft:"0.75rem", color:"var(--text-secondary)", fontSize:"0.88rem" }}>{q.desc}</span>
+            </div>
+            <div style={{ display:"flex", gap:"0.4rem" }}>
+              <span style={{ background:"var(--accent-light)", color:"var(--accent)", borderRadius:20, padding:"0.2rem 0.65rem", fontSize:"0.75rem", fontWeight:700 }}>{q.marks}m</span>
+              <span style={{ background:"var(--bg)", border:"1px solid var(--border)", color:"var(--text-muted)", borderRadius:20, padding:"0.2rem 0.65rem", fontSize:"0.75rem" }}>{q.timing}</span>
+            </div>
+          </div>
+          <div style={{ marginTop:"0.3rem", fontSize:"0.77rem", color:"var(--text-muted)" }}>📄 {q.section}</div>
+        </button>
+      ))}
+    </div>
+  );
+
+  // ── Step: choose paper
+  if (step === "paper") return (
+    <div style={{ maxWidth:700, margin:"0 auto", padding:"2rem 1rem" }} className="fade-in">
+      <button onClick={()=>setStep("q")} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--accent)", fontSize:"0.875rem", padding:"0 0 1rem" }}>← Back</button>
+      <h2 style={S.pageH}>{q?.label}: {q?.desc}</h2>
+      <p style={{ color:"var(--text-muted)", marginBottom:"1.5rem" }}>Which past paper are you working from?</p>
+      {PAST_PAPERS.map(p => {
+        const ant = ANTHOLOGY_TEXTS.find(t => t.id === p.anthology);
+        return (
+          <button key={p.id} onClick={()=>{ setPaperId(p.id); setStep("write"); }} style={S.qCard}
+            onMouseEnter={e=>e.currentTarget.style.borderColor="var(--accent)"}
+            onMouseLeave={e=>e.currentTarget.style.borderColor="var(--border)"}>
+            <div style={{ fontWeight:700, color:"var(--text)" }}>{p.label}</div>
+            <div style={{ fontSize:"0.8rem", color:"var(--text-muted)", marginTop:2 }}>Anthology: <span style={{ color:"var(--accent)" }}>{ant?.title}</span></div>
+            <div style={{ marginTop:"0.6rem", display:"flex", gap:"0.75rem" }}>
+              <a href={p.queUrl} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}
+                style={{ fontSize:"0.77rem", color:"var(--accent)", textDecoration:"none" }}>📄 Question paper ↗</a>
+              <a href={p.srcUrl} target="_blank" rel="noreferrer" onClick={e=>e.stopPropagation()}
+                style={{ fontSize:"0.77rem", color:"var(--accent)", textDecoration:"none" }}>📑 Source booklet ↗</a>
+            </div>
+          </button>
+        );
+      })}
+      <button onClick={()=>{ setPaperId(null); setStep("write"); }} style={{ ...S.qCard, opacity:0.7 }}>
+        <div style={{ fontWeight:600, color:"var(--text)" }}>General practice (no specific paper)</div>
+        <div style={{ fontSize:"0.8rem", color:"var(--text-muted)", marginTop:2 }}>I'll mark on general Edexcel criteria</div>
+      </button>
+    </div>
+  );
+
+  // ── Step: write answer
+  if (step === "write") return (
+    <div style={{ maxWidth:700, margin:"0 auto", padding:"2rem 1rem" }} className="fade-in">
+      <button onClick={()=>setStep("paper")} style={{ background:"none", border:"none", cursor:"pointer", color:"var(--accent)", fontSize:"0.875rem", padding:"0 0 1rem" }}>← Back</button>
+      <div style={S.card}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"1rem", flexWrap:"wrap", gap:"0.5rem" }}>
+          <div>
+            <h2 style={{ margin:0, fontFamily:"var(--font-display)", fontSize:"1.3rem", color:"var(--accent)" }}>{q?.label}</h2>
+            <p style={{ margin:"0.25rem 0 0", color:"var(--text-muted)", fontSize:"0.85rem" }}>{q?.desc} · {q?.marks} marks · {q?.timing}</p>
+          </div>
+          {paper && (
+            <div style={{ display:"flex", gap:"0.5rem" }}>
+              <a href={paper.srcUrl} target="_blank" rel="noreferrer" style={{ background:"var(--accent-light)", color:"var(--accent)", padding:"0.3rem 0.65rem", borderRadius:6, fontSize:"0.77rem", textDecoration:"none" }}>Source ↗</a>
+              <a href={paper.queUrl} target="_blank" rel="noreferrer" style={{ background:"var(--accent-light)", color:"var(--accent)", padding:"0.3rem 0.65rem", borderRadius:6, fontSize:"0.77rem", textDecoration:"none" }}>Paper ↗</a>
+            </div>
+          )}
+        </div>
+
+        <div style={{ background:"var(--bg)", borderRadius:10, padding:"0.9rem 1rem", marginBottom:"1.1rem", fontSize:"0.86rem", color:"var(--text-secondary)", lineHeight:1.6 }}>
+          <strong style={{ color:"var(--text)" }}>How to answer: </strong>
+          {{ q1:"Select two words or phrases from the specified lines. Quote directly — no paraphrase, no explanation needed.",
+             q2:"Write four separate points in your own words. Show inference — read between the lines. Do not use quotation. Aim for 100–200 words.",
+             q3:"Make five points, each with a brief quotation and an explanatory comment. Use Point → Quote → Explanation five times. Aim for 150–250 words.",
+             q4:"Write three analytical paragraphs covering beginning, middle and end of the anthology text. Use precise terminology. Zoom in on individual words. Aim for ~400 words.",
+             q5:"Write six comparative paragraphs, each comparing both writers' perspectives on a specific point. Focus on what the writers think and feel, not just what happens. Aim for ~750 words.",
+          }[qId]}
+        </div>
+
+        <textarea value={answer} onChange={e=>setAnswer(e.target.value)}
+          placeholder="Type your answer here…"
+          style={{ width:"100%", minHeight: qId==="q5"?420:qId==="q4"?300:160, padding:"1rem", border:"2px solid var(--border)", borderRadius:10, fontSize:"0.9rem", fontFamily:"var(--font-body)", resize:"vertical", color:"var(--text)", background:"var(--bg)", boxSizing:"border-box", lineHeight:1.65, outline:"none" }} />
+
+        {/* ── Multi-page image uploader ─────────────────────────────── */}
+        <div style={{ marginTop:"1rem", background:"var(--bg)", borderRadius:10, padding:"1rem", border:"1px solid var(--border)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom: pages.length ? "0.85rem" : 0 }}>
+            <span style={{ fontSize:"0.85rem", fontWeight:600, color:"var(--text)" }}>
+              📷 Handwritten answer {pages.length > 0 ? `(${pages.length} page${pages.length>1?"s":""} uploaded)` : ""}
+            </span>
+            <div style={{ display:"flex", gap:"0.5rem" }}>
+              <input type="file" accept="image/*" multiple ref={fileRef} onChange={addPages} style={{ display:"none" }} />
+              <button onClick={()=>fileRef.current.click()} style={{ ...S.secondaryBtn, fontSize:"0.8rem", padding:"0.35rem 0.75rem" }}>
+                + Add page{pages.length>0?"s":""}
+              </button>
+            </div>
+          </div>
+
+          {pages.length === 0 && (
+            <p style={{ fontSize:"0.8rem", color:"var(--text-muted)", marginTop:"0.5rem", lineHeight:1.5 }}>
+              Take a photo of each page and upload them here. You can add multiple pages and reorder them.
+            </p>
+          )}
+
+          {pages.length > 0 && (
+            <div style={{ display:"flex", gap:"0.75rem", flexWrap:"wrap" }}>
+              {pages.map((pg, i) => (
+                <div key={i} style={{ position:"relative", textAlign:"center" }}>
+                  <div style={{ fontSize:"0.72rem", fontWeight:700, color:"var(--accent)", marginBottom:"0.3rem" }}>Page {i+1}</div>
+                  <img src={pg.dataUrl} alt={`Page ${i+1}`}
+                    style={{ width:90, height:120, objectFit:"cover", borderRadius:6, border:"2px solid var(--border)", display:"block" }} />
+                  {/* Reorder & delete controls */}
+                  <div style={{ display:"flex", justifyContent:"center", gap:"0.2rem", marginTop:"0.35rem" }}>
+                    <button onClick={()=>movePage(i,-1)} disabled={i===0}
+                      style={{ background:"none", border:"1px solid var(--border)", borderRadius:4, padding:"0.1rem 0.35rem", cursor:"pointer", fontSize:"0.7rem", color:"var(--text-muted)", opacity:i===0?0.3:1 }}>◀</button>
+                    <button onClick={()=>removePage(i)}
+                      style={{ background:"none", border:"1px solid #fecdd3", borderRadius:4, padding:"0.1rem 0.35rem", cursor:"pointer", fontSize:"0.7rem", color:"#be123c" }}>✕</button>
+                    <button onClick={()=>movePage(i,1)} disabled={i===pages.length-1}
+                      style={{ background:"none", border:"1px solid var(--border)", borderRadius:4, padding:"0.1rem 0.35rem", cursor:"pointer", fontSize:"0.7rem", color:"var(--text-muted)", opacity:i===pages.length-1?0.3:1 }}>▶</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginTop:"1.25rem", display:"flex", justifyContent:"flex-end" }}>
+          <button onClick={submit} disabled={!answer.trim()&&pages.length===0}
+            style={{ ...S.primaryBtn, width:"auto", opacity:(!answer.trim()&&pages.length===0)?0.4:1 }}>
+            Submit for marking →
+          </button>
+        </div>
+      </div>
+
+      <div style={{ marginTop:"1rem", background:"#fffbeb", border:"1px solid #fde68a", borderRadius:10, padding:"0.85rem 1rem", fontSize:"0.8rem", color:"#92400e", lineHeight:1.55 }}>
+        ⚠️ {SAFEGUARDING_NOTICE}
+      </div>
+    </div>
+  );
+
+  // ── Step: marking spinner
+  if (step === "marking") return (
+    <div style={{ maxWidth:700, margin:"0 auto", padding:"5rem 1rem", textAlign:"center" }} className="fade-in">
+      <div style={{ fontSize:"3rem", marginBottom:"1rem", display:"inline-block", animation:"spin 1.5s linear infinite" }}>🔍</div>
+      <h3 style={{ fontFamily:"var(--font-display)", color:"var(--text)", marginBottom:"0.5rem" }}>Marking your answer…</h3>
+      <p style={{ color:"var(--text-muted)" }}>The AI examiner is reading your response carefully.</p>
+    </div>
+  );
+
+  // ── Step: result
+  if (step === "result" && result) return (
+    <div style={{ maxWidth:700, margin:"0 auto", padding:"2rem 1rem" }} className="fade-in">
+      <div style={S.card}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"1.25rem", flexWrap:"wrap", gap:"0.5rem" }}>
+          <div>
+            <h2 style={{ margin:0, fontFamily:"var(--font-display)", fontSize:"1.3rem" }}>Your Result</h2>
+            <p style={{ margin:"0.2rem 0 0", color:"var(--text-muted)", fontSize:"0.8rem" }}>Marked by {result.model} · {q?.label} · {paper?.label || "Practice"}</p>
+          </div>
+          <div style={{ textAlign:"center" }}>
+            <div style={{ fontFamily:"var(--font-display)", fontSize:"2.6rem", color: markColour(result.mark, result.outOf), lineHeight:1 }}>
+              {result.mark}<span style={{ fontSize:"1.2rem", color:"var(--text-muted)" }}>/{result.outOf}</span>
+            </div>
+            <div style={{ fontSize:"0.82rem", fontWeight:700, color: markColour(result.mark, result.outOf) }}>{result.grade}</div>
+          </div>
+        </div>
+
+        <div style={{ background:"var(--bg)", borderRadius:10, padding:"1rem", marginBottom:"1.1rem", fontSize:"0.9rem", color:"var(--text-secondary)", lineHeight:1.65 }}>
+          {result.summary}
+        </div>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.85rem", marginBottom:"1.1rem" }}>
+          <div style={{ background:"#f0fdf4", borderRadius:10, padding:"1rem" }}>
+            <div style={{ fontWeight:700, fontSize:"0.85rem", color:"#166534", marginBottom:"0.5rem" }}>✅ Strengths</div>
+            {result.strengths?.map((s,i) => <div key={i} style={{ fontSize:"0.84rem", color:"#15803d", marginBottom:4, lineHeight:1.5 }}>• {s}</div>)}
+          </div>
+          <div style={{ background:"#fff7ed", borderRadius:10, padding:"1rem" }}>
+            <div style={{ fontWeight:700, fontSize:"0.85rem", color:"#9a3412", marginBottom:"0.5rem" }}>📈 To improve</div>
+            {result.improvements?.map((s,i) => <div key={i} style={{ fontSize:"0.84rem", color:"#c2410c", marginBottom:4, lineHeight:1.5 }}>• {s}</div>)}
+          </div>
+        </div>
+
+        <div style={{ background:"#eff6ff", borderRadius:10, padding:"1rem", marginBottom:"1.25rem" }}>
+          <div style={{ fontWeight:700, fontSize:"0.85rem", color:"#1d4ed8", marginBottom:"0.3rem" }}>💡 Examiner's tip</div>
+          <div style={{ fontSize:"0.875rem", color:"#1e40af", lineHeight:1.6 }}>{result.examinerTip}</div>
+        </div>
+
+        <div style={{ display:"flex", gap:"0.75rem", justifyContent:"flex-end", flexWrap:"wrap" }}>
+          <button onClick={()=>{ reset(); setStep("q"); }} style={S.secondaryBtn}>Try another question</button>
+          <button onClick={()=>{ reset(); setStep("write"); }} style={{ ...S.primaryBtn, width:"auto" }}>Try this question again</button>
+        </div>
+      </div>
+    </div>
+  );
+
+  return null;
+}
+
+// ── PROGRESS PAGE ──────────────────────────────────────────────────────────
+function ProgressPage({ user }) {
+  const subs = DB.getSubmissions(user.id);
+
+  return (
+    <div style={{ maxWidth:800, margin:"0 auto", padding:"2rem 1rem" }} className="fade-in">
+      <h2 style={S.pageH}>My Progress</h2>
+      <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(130px,1fr))", gap:"0.75rem", marginBottom:"1.75rem" }}>
+        {QUESTIONS.map(q => {
+          const qs = subs.filter(s => s.qId === q.id);
+          const avg = qs.length ? Math.round(qs.reduce((a,s) => a + (s.result?.mark||0)/(s.result?.outOf||1), 0) / qs.length * 100) : null;
+          return (
+            <div key={q.id} style={{ background:"var(--card)", borderRadius:12, padding:"1rem", boxShadow:"var(--shadow)", textAlign:"center", border:"1px solid var(--border)" }}>
+              <div style={{ fontFamily:"var(--font-display)", fontSize:"1.6rem", color: avg!=null?markColour(avg,100):"var(--text-muted)", lineHeight:1 }}>{avg!=null?`${avg}%`:"—"}</div>
+              <div style={{ fontSize:"0.83rem", fontWeight:700, color:"var(--text)", marginTop:3 }}>{q.label}</div>
+              <div style={{ fontSize:"0.73rem", color:"var(--text-muted)", marginTop:2 }}>{qs.length} attempt{qs.length!==1?"s":""}</div>
+            </div>
+          );
+        })}
+      </div>
+
+      {subs.length === 0 ? (
+        <div style={{ textAlign:"center", padding:"3rem", color:"var(--text-muted)" }}>No submissions yet. Head to Practice & Marking to get started!</div>
+      ) : (
+        <div style={S.card}>
+          <h3 style={{ margin:"0 0 1rem", fontFamily:"var(--font-display)", fontSize:"1.1rem" }}>All submissions</h3>
+          {subs.map(s => <SubRow key={s.id} sub={s} expanded />)}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── PAPERS PAGE ────────────────────────────────────────────────────────────
+function PapersPage() {
+  return (
+    <div style={{ maxWidth:800, margin:"0 auto", padding:"2rem 1rem" }} className="fade-in">
+      <h2 style={S.pageH}>Past Papers</h2>
+      <p style={{ color:"var(--text-muted)", marginBottom:"1.5rem" }}>Official Edexcel papers, fetched directly from Pearson's servers. Links open in a new tab.</p>
+      {PAST_PAPERS.map(p => {
+        const ant = ANTHOLOGY_TEXTS.find(t => t.id === p.anthology);
+        return (
+          <div key={p.id} style={{ ...S.card, marginBottom:"0.85rem", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"1rem", padding:"1.1rem 1.5rem" }}>
+            <div>
+              <div style={{ fontWeight:700, fontFamily:"var(--font-display)", fontSize:"1rem" }}>{p.label}</div>
+              <div style={{ fontSize:"0.8rem", color:"var(--text-muted)", marginTop:2 }}>Anthology: <span style={{ color:"var(--accent)" }}>{ant?.title}</span> · {ant?.author}</div>
+            </div>
+            <div style={{ display:"flex", gap:"0.5rem" }}>
+              <a href={p.queUrl} target="_blank" rel="noreferrer"
+                style={{ background:"var(--accent)", color:"#fff", padding:"0.45rem 0.9rem", borderRadius:8, fontSize:"0.8rem", textDecoration:"none", fontWeight:600 }}>Question paper ↗</a>
+              <a href={p.srcUrl} target="_blank" rel="noreferrer"
+                style={{ background:"var(--bg)", border:"1px solid var(--border)", color:"var(--text)", padding:"0.45rem 0.9rem", borderRadius:8, fontSize:"0.8rem", textDecoration:"none", fontWeight:600 }}>Source booklet ↗</a>
+            </div>
+          </div>
+        );
+      })}
+      <div style={{ background:"#eff6ff", borderRadius:12, padding:"1rem 1.25rem", fontSize:"0.84rem", color:"#1e40af", marginTop:"0.5rem" }}>
+        📎 More papers can be added by your teacher. All PDFs are hosted by Pearson Education Ltd.
+      </div>
+    </div>
+  );
+}
+
+// ── SUBMISSION ROW ─────────────────────────────────────────────────────────
+function SubRow({ sub, showStudent, expanded: initExpanded }) {
+  const [open, setOpen] = useState(initExpanded ? false : false);
+  const q = QUESTIONS.find(x => x.id === sub.qId);
+  const p = PAST_PAPERS.find(x => x.id === sub.paperId);
+  return (
+    <div style={{ borderBottom:"1px solid var(--border)", padding:"0.8rem 0" }}>
+      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", cursor:"pointer", flexWrap:"wrap", gap:"0.5rem" }} onClick={()=>setOpen(!open)}>
+        <div style={{ display:"flex", gap:"0.6rem", alignItems:"center", flexWrap:"wrap" }}>
+          <span style={{ fontWeight:700, fontSize:"0.875rem", color:"var(--text)" }}>{q?.label}</span>
+          {showStudent && <span style={{ fontSize:"0.8rem", color:"var(--text-muted)" }}>{sub.userName}</span>}
+          {p && <span style={{ fontSize:"0.78rem", color:"var(--text-muted)" }}>{p.label}</span>}
+          <span style={{ fontSize:"0.73rem", color:"var(--text-muted)" }}>{new Date(sub.ts).toLocaleDateString()}</span>
+          {sub.model && <span style={{ fontSize:"0.7rem", background:"var(--bg)", border:"1px solid var(--border)", borderRadius:4, padding:"1px 5px", color:"var(--text-muted)" }}>{sub.model}</span>}
+        </div>
+        <div style={{ display:"flex", gap:"0.6rem", alignItems:"center" }}>
+          <span style={{ fontWeight:700, fontFamily:"var(--font-display)", color: markColour(sub.result?.mark, sub.result?.outOf) }}>{sub.result?.mark}/{sub.result?.outOf}</span>
+          <span style={{ color:"var(--text-muted)", fontSize:"0.75rem" }}>{open?"▲":"▼"}</span>
+        </div>
+      </div>
+      {open && sub.result && (
+        <div style={{ marginTop:"0.6rem", background:"var(--bg)", borderRadius:10, padding:"0.9rem", fontSize:"0.84rem", color:"var(--text-secondary)", lineHeight:1.55 }}>
+          <div style={{ marginBottom:"0.4rem" }}><strong>Summary:</strong> {sub.result.summary}</div>
+          <div style={{ marginBottom:"0.4rem" }}><strong>Strengths:</strong> {sub.result.strengths?.join(" · ")}</div>
+          <div style={{ marginBottom:"0.4rem" }}><strong>To improve:</strong> {sub.result.improvements?.join(" · ")}</div>
+          <div><strong>Tip:</strong> {sub.result.examinerTip}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── TEACHER DASHBOARD ──────────────────────────────────────────────────────
+function TeacherDashboard({ user, onLogout }) {
+  const [tab, setTab] = useState("overview");
+  const allSubs  = DB.getSubmissions(null);
+  const allFlags = DB.getFlags();
+  const unresolved = allFlags.filter(f => !f.resolved);
+  const claudeToday = DB.claudeToday();
+  const [, forceUpdate] = useState(0);
+
+  const navItems = [
+    { id:"overview", icon:"📊", label:"Overview" },
+    { id:"submissions", icon:"📝", label:"All Submissions" },
+    { id:"safeguarding", icon:"🛡️", label:`Safeguarding${unresolved.length?` (${unresolved.length})`:""}` },
+    { id:"settings", icon:"⚙️", label:"Settings" },
+  ];
+
+  return (
+    <div style={{ minHeight:"100vh", background:"var(--bg)", display:"flex", flexDirection:"column" }}>
+      {/* Header */}
+      <header style={{ background:"var(--card)", borderBottom:"1px solid var(--border)", padding:"0 1.5rem", display:"flex", alignItems:"center", justifyContent:"space-between", height:62, position:"sticky", top:0, zIndex:100 }}>
+        <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:"1.05rem", color:"var(--accent)" }}>📚 English iGCSE · Teacher Dashboard</div>
+        <div style={{ display:"flex", alignItems:"center", gap:"0.85rem" }}>
+          {unresolved.length > 0 && (
+            <button onClick={()=>setTab("safeguarding")} style={{ background:"#ef4444", color:"#fff", border:"none", borderRadius:20, padding:"0.25rem 0.75rem", fontSize:"0.8rem", fontWeight:700, cursor:"pointer" }}>
+              ⚠️ {unresolved.length} flag{unresolved.length!==1?"s":""}
+            </button>
+          )}
+          <span style={{ fontSize:"0.875rem", color:"var(--text-secondary)" }}>{user.name}</span>
+          <button onClick={onLogout} style={S.secondaryBtn}>Sign out</button>
+        </div>
+      </header>
+
+      <div style={{ display:"flex", flex:1 }}>
+        {/* Sidebar */}
+        <nav style={{ width:200, background:"var(--card)", borderRight:"1px solid var(--border)", padding:"1.25rem 0", flexShrink:0 }}>
+          {navItems.map(item => (
+            <button key={item.id} onClick={()=>setTab(item.id)}
+              style={{ width:"100%", textAlign:"left", padding:"0.75rem 1.5rem", border:"none", background:tab===item.id?"var(--accent-light)":"transparent", color:tab===item.id?"var(--accent)":"var(--text-secondary)", cursor:"pointer", fontSize:"0.875rem", fontWeight:tab===item.id?700:400, fontFamily:"var(--font-body)", borderLeft:tab===item.id?"3px solid var(--accent)":"3px solid transparent" }}>
+              {item.icon} {item.label}
+            </button>
+          ))}
+        </nav>
+
+        {/* Main */}
+        <main style={{ flex:1, padding:"2rem", overflowY:"auto" }} className="fade-in">
+          {tab === "overview" && (
+            <div>
+              <h2 style={S.pageH}>Overview</h2>
+              <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(170px,1fr))", gap:"0.85rem", marginBottom:"1.75rem" }}>
+                {[
+                  { icon:"📝", label:"Total submissions",  value: allSubs.length },
+                  { icon:"🛡️", label:"Safeguarding flags", value: allFlags.length, hi: unresolved.length>0 },
+                  { icon:"🤖", label:"Claude calls today",  value: `${claudeToday}/${CONFIG.CLAUDE_DAILY_CAP}` },
+                  { icon:"👥", label:"Students active",     value: [...new Set(allSubs.map(s=>s.userId))].length },
+                ].map(({ icon, label, value, hi }) => (
+                  <div key={label} style={{ background: hi?"#fff1f2":"var(--card)", borderRadius:14, padding:"1.1rem 1.25rem", border:`1px solid ${hi?"#fecdd3":"var(--border)"}`, boxShadow:"var(--shadow)" }}>
+                    <div style={{ fontSize:"1.4rem", marginBottom:"0.4rem" }}>{icon}</div>
+                    <div style={{ fontFamily:"var(--font-display)", fontSize:"1.8rem", color: hi?"#be123c":"var(--accent)", lineHeight:1 }}>{value}</div>
+                    <div style={{ fontSize:"0.8rem", color:"var(--text-muted)", marginTop:3 }}>{label}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={S.card}>
+                <h3 style={{ margin:"0 0 1rem", fontFamily:"var(--font-display)", fontSize:"1.1rem" }}>Recent activity</h3>
+                {allSubs.length === 0 ? <p style={{ color:"var(--text-muted)" }}>No submissions yet.</p>
+                  : allSubs.slice(0,10).map(s => <SubRow key={s.id} sub={s} showStudent />)}
+              </div>
+            </div>
+          )}
+
+          {tab === "submissions" && (
+            <div>
+              <h2 style={S.pageH}>All Submissions</h2>
+              <div style={S.card}>
+                {allSubs.length === 0 ? <p style={{ color:"var(--text-muted)" }}>No submissions yet.</p>
+                  : allSubs.map(s => <SubRow key={s.id} sub={s} showStudent expanded />)}
+              </div>
+            </div>
+          )}
+
+          {tab === "safeguarding" && (
+            <div>
+              <h2 style={S.pageH}>Safeguarding Flags</h2>
+              <div style={{ background:"#fff7ed", border:"1px solid #fed7aa", borderRadius:12, padding:"1rem 1.25rem", marginBottom:"1.5rem", fontSize:"0.875rem", color:"#9a3412", lineHeight:1.6 }}>
+                🛡️ <strong>For authorised staff only.</strong> All flags are generated automatically when keywords are detected or the AI raises a concern. Review promptly in line with your school's safeguarding policy (KCSIE 2024). Unresolved flags should be referred to your Designated Safeguarding Lead (DSL) without delay. Do not contact the student directly about flagged content without consulting your DSL first.
+              </div>
+              {allFlags.length === 0 ? (
+                <div style={{ textAlign:"center", padding:"3rem", color:"var(--text-muted)" }}>No flags raised. 🎉</div>
+              ) : allFlags.map(flag => (
+                <div key={flag.id} style={{ background: flag.resolved?"var(--card)":"#fff1f2", border:`1px solid ${flag.resolved?"var(--border)":"#fecdd3"}`, borderRadius:12, padding:"1.1rem 1.25rem", marginBottom:"0.75rem" }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", flexWrap:"wrap", gap:"0.5rem" }}>
+                    <div>
+                      <span style={{ fontWeight:700, color: flag.resolved?"var(--text-muted)":"#be123c" }}>{flag.resolved ? "✓ Resolved" : "⚠️ Unresolved"}</span>
+                      <span style={{ marginLeft:"0.75rem", fontSize:"0.875rem", color:"var(--text)" }}>{flag.userName}</span>
+                      <span style={{ marginLeft:"0.5rem", fontSize:"0.8rem", color:"var(--text-muted)" }}>{new Date(flag.ts).toLocaleString()}</span>
+                    </div>
+                    {!flag.resolved && (
+                      <button onClick={()=>{ DB.resolveFlag(flag.id); forceUpdate(n=>n+1); }}
+                        style={{ ...S.secondaryBtn, fontSize:"0.78rem", padding:"0.3rem 0.7rem" }}>Mark resolved</button>
+                    )}
+                  </div>
+                  <div style={{ marginTop:"0.4rem", fontSize:"0.78rem", color:"var(--text-muted)" }}>
+                    Reason: {flag.reason} · {QUESTIONS.find(q=>q.id===flag.qId)?.label || flag.qId}
+                  </div>
+                  <div style={{ marginTop:"0.5rem", background:"var(--bg)", borderRadius:8, padding:"0.7rem 0.9rem", fontSize:"0.84rem", color:"var(--text-secondary)", lineHeight:1.55 }}>
+                    {flag.content?.slice(0,300)}{flag.content?.length>300?"…":""}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {tab === "settings" && (
+            <div>
+              <h2 style={S.pageH}>Settings & API</h2>
+              <div style={{ ...S.card, maxWidth:580 }}>
+                <p style={{ color:"var(--text-secondary)", marginTop:0, lineHeight:1.65, marginBottom:"1.25rem" }}>
+                  API keys are stored as <strong>Vercel Environment Variables</strong> — they never touch the browser. To update them, go to your Vercel project → <strong>Settings → Environment Variables</strong>, then redeploy.
+                </p>
+                <div style={{ display:"flex", flexDirection:"column", gap:"0.75rem", marginBottom:"1.5rem" }}>
+                  {[
+                    { label:"Anthropic (Claude)", env:"ANTHROPIC_KEY", desc:"Primary marker — uses Claude Sonnet" },
+                    { label:"Google (Gemini 2.0 Flash)", env:"GEMINI_KEY", desc:"Free-tier fallback — 1,500 req/day" },
+                  ].map(({ label, env, desc }) => (
+                    <div key={env} style={{ padding:"0.85rem 1rem", background:"var(--bg)", borderRadius:8 }}>
+                      <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                        <div style={{ fontWeight:600, fontSize:"0.875rem" }}>{label}</div>
+                        <span style={{ fontSize:"0.73rem", fontFamily:"monospace", background:"var(--card)", border:"1px solid var(--border)", borderRadius:4, padding:"0.15rem 0.5rem", color:"var(--text-muted)" }}>{env}</span>
+                      </div>
+                      <div style={{ fontSize:"0.78rem", color:"var(--text-muted)", marginTop:3 }}>{desc}</div>
+                    </div>
+                  ))}
+                </div>
+                <div style={{ background:"var(--bg)", borderRadius:10, padding:"1rem", fontSize:"0.84rem", color:"var(--text-muted)", lineHeight:1.65 }}>
+                  <strong>Claude daily cap:</strong> {CONFIG.CLAUDE_DAILY_CAP} calls/day (today: {claudeToday} used).<br/>
+                  After the cap, marking switches automatically to Gemini. To change the cap, edit <code>CLAUDE_DAILY_CAP</code> in <code>public/index.html</code> and redeploy.
+                </div>
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+// ── STUDENT SHELL ──────────────────────────────────────────────────────────
+function StudentShell({ user, onLogout }) {
+  const [page, setPage] = useState("home");
+  const navItems = [
+    { id:"home",     icon:"🏠", label:"Home" },
+    { id:"revision", icon:"📖", label:"Revision" },
+    { id:"practice", icon:"✏️", label:"Practice" },
+    { id:"progress", icon:"📊", label:"Progress" },
+    { id:"papers",   icon:"📄", label:"Papers" },
+  ];
+  return (
+    <div style={{ minHeight:"100vh", background:"var(--bg)" }}>
+      <header style={{ background:"var(--card)", borderBottom:"1px solid var(--border)", padding:"0 1.25rem", display:"flex", alignItems:"center", justifyContent:"space-between", height:58, position:"sticky", top:0, zIndex:100 }}>
+        <div style={{ fontFamily:"var(--font-display)", fontWeight:700, fontSize:"1rem", color:"var(--accent)" }}>📚 English iGCSE</div>
+        <nav style={{ display:"flex", gap:"0.15rem" }}>
+          {navItems.map(item => (
+            <button key={item.id} onClick={()=>setPage(item.id)}
+              style={{ background: page===item.id?"var(--accent-light)":"transparent", color: page===item.id?"var(--accent)":"var(--text-secondary)", border:"none", padding:"0.45rem 0.7rem", borderRadius:8, cursor:"pointer", fontSize:"0.82rem", fontWeight: page===item.id?700:400, fontFamily:"var(--font-body)" }}>
+              <span>{item.icon}</span>
+              <span className="nav-label" style={{ marginLeft:"0.3rem" }}>{item.label}</span>
+            </button>
+          ))}
+        </nav>
+        <button onClick={onLogout} style={{ ...S.secondaryBtn, fontSize:"0.78rem", padding:"0.38rem 0.75rem" }}>Sign out</button>
+      </header>
+      <div>
+        {page==="home"     && <StudentHome     user={user} nav={setPage} />}
+        {page==="revision" && <RevisionPage />}
+        {page==="practice" && <PracticePage    user={user} />}
+        {page==="progress" && <ProgressPage    user={user} />}
+        {page==="papers"   && <PapersPage />}
+      </div>
+    </div>
+  );
+}
+
+// ── ROOT ───────────────────────────────────────────────────────────────────
+function App() {
+  const [user, setUser] = useState(() => DB.get("dc_user"));
+
+  const login = u => { DB.set("dc_user", u); setUser(u); };
+  const logout = () => { DB.set("dc_user", null); setUser(null); };
+
+  if (!user)               return <LoginPage onLogin={login} />;
+  if (user.role==="teacher") return <TeacherDashboard user={user} onLogout={logout} />;
+  return <StudentShell user={user} onLogout={logout} />;
+}
+
+ReactDOM.render(<App />, document.getElementById("root"));
+</script>
+</body>
+</html>
