@@ -13,7 +13,7 @@ module.exports = async function handler(req, res) {
     return res.status(500).json({ error: "GEMINI_KEY not configured on server" });
   }
 
-  const model = (req.body && req.body.model) || "gemini-1.5-flash";
+  const model = (req.body && req.body.model) || "gemini-2.0-flash";
   const payload = (req.body && req.body.payload) || req.body;
 
   try {
